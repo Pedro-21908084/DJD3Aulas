@@ -1,8 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class AI : MonoBehaviour
 {
     private const float MAX_FOWARD_ACCELERATION         = 20.0F;
     private const float MAX_BACKWARD_ACCELERATION       = 10.0f;
@@ -19,6 +20,14 @@ public class Player : MonoBehaviour
     private Vector3                 _velocity;
     private Vector3                 _acceleration;
     private bool                    _jump;
+    [Range(-1, 1)]
+    [SerializeField] float          input_Foward = 0f;
+    [Range(-1, 1)]
+    [SerializeField] float          input_Strafe = 0f;
+    [SerializeField] GameObject     player;
+    [SerializeField] Transform      body;
+    private bool                    seesPlayer = false;
+    [SerializeField] Transform      lastPlayerLocation;
 
     private void Start()
     {
@@ -30,10 +39,62 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
+        GetPlayer();
         UpdateAcceleration();
         UpdateVelocity();
         UpdatePosition();
     }
+
+    private void GetPlayer()
+    {
+        //vector to pthe player
+        Vector3 vectToPlayer = player.transform.position - transform.position;
+
+        float angleDeg = CalcAngle(vectToPlayer);
+
+        //checks if player is in vision
+        if(angleDeg < 45 && !CheckForObsticals(vectToPlayer))
+            seesPlayer = true;
+        else if(seesPlayer)
+        {
+            seesPlayer = false;
+            lastPlayerLocation.position = Vector3.MoveTowards
+                (lastPlayerLocation.position, player.transform.position, 1000);
+        }
+        
+        //opninal to put angle normal
+        Vector3 playerLocal = body.InverseTransformPoint(player.transform.position.x, 
+            player.transform.position.y, player.transform.position.z);
+
+        angleDeg = (playerLocal.x < body.forward.x) ? 360-angleDeg: angleDeg;
+
+        if (seesPlayer)
+            print(angleDeg);
+        else
+            print("?" + lastPlayerLocation.position + "?");
+    }
+
+    private bool CheckForObsticals(Vector3 vectToPlayer)
+    {
+        RaycastHit hit; 
+        Physics.Raycast(body.position, vectToPlayer, out hit);
+        print(hit.collider.tag);
+        
+        return !(hit.collider.tag == "Player");
+    }
+
+    private float CalcAngle(Vector3 vectToPlayer)
+    {
+        //calc angle to player in rads
+        float angleRad = Mathf.Acos((body.forward.x * vectToPlayer.x +
+            body.forward.z * vectToPlayer.z) / (Mathf.Sqrt(Mathf.Pow(body.forward.x, 2)
+            + Mathf.Pow(body.forward.z, 2)) * Mathf.Sqrt(Mathf.Pow(vectToPlayer.x, 2)
+            + Mathf.Pow(vectToPlayer.z, 2))));
+
+        //convert to degrees
+        return angleRad * Mathf.Rad2Deg;
+    }
+
     private void Update()
     {
         CheckForJump();
@@ -47,10 +108,10 @@ public class Player : MonoBehaviour
 
     private void UpdateAcceleration() 
     {
-        _acceleration.z = Input.GetAxis("Foward");
+        _acceleration.z = input_Foward;
         _acceleration.z *= (_acceleration.z > 0)? MAX_FOWARD_ACCELERATION : MAX_BACKWARD_ACCELERATION;
 
-        _acceleration.x = Input.GetAxis("Strafe") * MAX_STRAFE_ACCELERATION;
+        _acceleration.x = input_Strafe * MAX_STRAFE_ACCELERATION;
 
         if (_jump)
         {
@@ -86,3 +147,4 @@ public class Player : MonoBehaviour
     }
 
 }
+
