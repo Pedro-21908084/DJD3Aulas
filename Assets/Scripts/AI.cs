@@ -67,11 +67,6 @@ public class AI : MonoBehaviour
             player.transform.position.y, player.transform.position.z);
 
         angleDeg = (playerLocal.x < body.forward.x) ? 360-angleDeg: angleDeg;
-
-        if (seesPlayer)
-            print(angleDeg);
-        else
-            print("?" + lastPlayerLocation.position + "?");
     }
 
     private bool CheckForObsticals(Vector3 vectToPlayer)
